@@ -21,11 +21,11 @@ class App:
     ##   Draw Board
     ##############################################################################################################
     def drawBoard(self):
-        self.photo_frame = ttk.LabelFrame(self.master, text = "asdfsad", width = 850, height = 650)
+        self.photo_frame = ttk.LabelFrame(self.master, text = "Image", width = 850, height = 650)
         self.photo_frame.pack(side = 'left', padx = 50, fill = 'x', expand = True)
         self.photo_frame.pack_propagate(False) # Keep the frame visible
 
-        self.content_frame = ttk.LabelFrame(self.master, text = "sadfdsfasdfasdf", width = 400, height = 350)
+        self.content_frame = ttk.LabelFrame(self.master, text = "Meta Data", width = 400, height = 350)
         self.content_frame.pack(side = 'left', padx = 20, fill = 'x', expand = True)
         self.content_frame.pack_propagate(False)
 
@@ -53,7 +53,23 @@ class App:
     ##   Open Folder
     ##############################################################################################################
     def openFolder(self):
-        pass
+
+        try:
+            self.folder = filedialog.askdirectory(title = 'open a folder')
+            self.image_list = os.listdir(self.folder)   # list all the files in the folder
+            self.new_image_list = [img for img in self.image_list if img.endswith(".jpg")
+                                or img.endswith('.JPG') or img.endswith('.png')]
+        except FileNotFoundError:
+            self.pop_up = tkinter.Toplevel(self.master)
+            self.pop_up.title("Alert")
+            self.pop_up.resizable(False, False)
+            self.pop_up.lift(self.master)
+            ttk.Label(self.pop_up, text = "operation cancelled", background = "red").pack(padx = 20, pady = 20)
+            ttk.Button(self.pop_up, text = "ok", command = self.pop_up.destroy).pack(padx = 20, pady = 20)
+
+             
+
+
 
     ##############################################################################################################
     ##   Load image
