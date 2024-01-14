@@ -8,6 +8,7 @@ from PIL import Image, ImageTk
 import tkinter
 from tkinter import ttk, filedialog
 
+
 ##############################################################################################################
 ##   Defining Class
 ##############################################################################################################
@@ -59,6 +60,9 @@ class App:
             self.image_list = os.listdir(self.folder)   # list all the files in the folder
             self.new_image_list = [img for img in self.image_list if img.endswith(".jpg")
                                 or img.endswith('.JPG') or img.endswith('.png')]
+            self.forward_button.state(['!disabled'])
+            self.loadImage()
+
         except FileNotFoundError:
             self.pop_up = tkinter.Toplevel(self.master)
             self.pop_up.title("Alert")
@@ -75,22 +79,43 @@ class App:
     ##   Load image
     ##############################################################################################################
 
-    def loadImage(self):
-        pass
-
+    def loadImage(self, image_counter = 0):
+        # Getting the complete path of the image
+        self.image_counter = image_counter
+        self.image = self.folder + '/' + self.new_image_list[self.image_counter]
+        # Resize the image
+        width, height = Image.open(self.image).size
+        if width > height:
+            self.image_resized = Image.open(self.image).resize((850, 550))
+        else:
+            self.image_resized = Image.open(self.image).resize((450, 600))
+        
+        self.load_image = ImageTk.PhotoImage(self.image_resized)
+        # Attach the image to the image label
+        self.image_label.image = self.load_image
+        self.image_label.config(image = self.image_label.image)
     ##############################################################################################################
     ##   Next Image
     ############################################################################################################## 
     
     def moveForward(self):
-        pass
+        self.image_counter += 1
+        self.loadImage(self.image_counter)
+        self.back_button.state(['!disabled'])
+        if self.image_counter + 1 == len(self.new_image_list):
+            self.forward_button.state(['disabled'])
+
 
     ##############################################################################################################
     ##   Previous Image
     ##############################################################################################################
 
     def moveBackward(self):
-        pass
+        self.image_counter -= 1
+        self.loadImage(self.image_counter)
+        self.forward_button.state(['!disabled'])
+        if self.image_counter == 0:
+            self.back_button.state(['disabled'])
 
     ##############################################################################################################
     ##   Helper
