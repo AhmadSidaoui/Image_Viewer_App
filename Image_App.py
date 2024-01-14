@@ -5,8 +5,10 @@
 import os
 import random
 from PIL import Image, ImageTk
+from PIL.ExifTags import TAGS
 import tkinter
 from tkinter import ttk, filedialog
+
 
 
 ##############################################################################################################
@@ -61,6 +63,7 @@ class App:
             self.new_image_list = [img for img in self.image_list if img.endswith(".jpg")
                                 or img.endswith('.JPG') or img.endswith('.png')]
             self.forward_button.state(['!disabled'])
+            self.meta_button.state(['!disabled'])
             self.loadImage()
 
         except FileNotFoundError:
@@ -99,6 +102,8 @@ class App:
     ############################################################################################################## 
     
     def moveForward(self):
+        self.meta_button.state(['!disabled'])
+        self.clearMeta()
         self.image_counter += 1
         self.loadImage(self.image_counter)
         self.back_button.state(['!disabled'])
@@ -111,25 +116,40 @@ class App:
     ##############################################################################################################
 
     def moveBackward(self):
+        self.meta_button.state(['!disabled'])
+        self.clearMeta()
         self.image_counter -= 1
         self.loadImage(self.image_counter)
         self.forward_button.state(['!disabled'])
         if self.image_counter == 0:
             self.back_button.state(['disabled'])
 
+
     ##############################################################################################################
     ##   Helper
     ##############################################################################################################
 
-    def helper(self):
-        pass
+    def clearMeta(self):
+        if self.content_frame.pack_slaves():
+            for widget in self.content_frame.pack_slaves():
+                widget.destroy()
 
     ##############################################################################################################
     ##   Extract Meta
     ##############################################################################################################
 
-    def extractMeta(sef):
-        pass
+    def extractMeta(self):
+        self.clearMeta()
+        file = Image.open(self.image)
+        data = file.getexif()
+        if data:
+            for key, value in data.items():
+                tag_name = TAGS.get(key)  # Use TAGS dictionary to get tag name
+                label_text = f"{tag_name}: {str(value)}"
+                ttk.Label(self.content_frame, text = label_text).pack(anchor = "sw", pady = 3)
+        else:
+            ttk.Label(self.content_frame, text = "No metadata found").pack(anchor = "sw", padx = 20, pady = 3)
+        self.meta_button.state(['disabled'])
 
 
 
