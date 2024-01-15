@@ -8,6 +8,11 @@ from PIL import Image, ImageTk
 from PIL.ExifTags import TAGS
 import tkinter
 from tkinter import ttk, filedialog
+# image segmentation dependencies
+import cv2
+import numpy as np
+from sklearn.cluster import KMeans
+import matplotlib.pyplot as plt
 
 
 
@@ -50,6 +55,15 @@ class App:
         self.meta_button = ttk.Button(self.photo_frame, text = "meta", state = "disabled", command = self.extractMeta)
         self.meta_button.pack(side = "left", anchor = "sw")
 
+        self.segment_button = ttk.Button(self.photo_frame, text = "Segment Image", state = "disabled", command = self.segment_image)
+        self.segment_button.pack(side = "left", anchor = "sw")
+        
+        self.cluster_label = ttk.Label(self.photo_frame, text = "Cluster Number:")
+        self.cluster_label.pack(side = "left", anchor = "sw", padx = 10)
+                
+        self.num_clusters = tkinter.Spinbox(self.photo_frame, from_ = 2, to = 20, state = "disabled")
+        self.num_clusters.pack(side = "left", anchor = "sw", padx = 5)
+
         
 
     ##############################################################################################################
@@ -61,9 +75,12 @@ class App:
             self.folder = filedialog.askdirectory(title = 'open a folder')
             self.image_list = os.listdir(self.folder)   # list all the files in the folder
             self.new_image_list = [img for img in self.image_list if img.endswith(".jpg")
-                                or img.endswith('.JPG') or img.endswith('.png')]
+                                or img.endswith('.JPG') or img.endswith('.png') or img.endswith('.JPEG')
+                                or img.endswith('jpeg')]
             self.forward_button.state(['!disabled'])
             self.meta_button.state(['!disabled'])
+            self.segment_button.state(['!disabled'])
+            self.num_clusters.config(state = 'normal')
             self.loadImage()
 
         except FileNotFoundError:
@@ -71,7 +88,7 @@ class App:
             self.pop_up.title("Alert")
             self.pop_up.resizable(False, False)
             self.pop_up.lift(self.master)
-            ttk.Label(self.pop_up, text = "operation cancelled", background = "red").pack(padx = 20, pady = 20)
+            ttk.Label(self.pop_up, text = "operation cancelled").pack(padx = 20, pady = 20)
             ttk.Button(self.pop_up, text = "ok", command = self.pop_up.destroy).pack(padx = 20, pady = 20)
 
              
@@ -92,11 +109,11 @@ class App:
             self.image_resized = Image.open(self.image).resize((850, 550))
         else:
             self.image_resized = Image.open(self.image).resize((450, 600))
-        
+        self.width, self.height = self.image_resized.size
         self.load_image = ImageTk.PhotoImage(self.image_resized)
         # Attach the image to the image label
         self.image_label.image = self.load_image
-        self.image_label.config(image = self.image_label.image)
+        self.image_label.config(image = self.image_label.image)                     
     ##############################################################################################################
     ##   Next Image
     ############################################################################################################## 
@@ -151,7 +168,41 @@ class App:
             ttk.Label(self.content_frame, text = "No metadata found").pack(anchor = "sw", padx = 20, pady = 3)
         self.meta_button.state(['disabled'])
 
+    ##############################################################################################################
+    ##   Segment Image
+    ##############################################################################################################
 
+    def segment_image(self):
+        # Convert image to RGB (if it's in a different format)
+        image = Image.open(self.image)
+        image = image.convert("RGB")
+
+        # Reshape the image to a 2D array of pixels
+        pixels = np.array(image)
+        pixels = pixels.reshape(-1, 3)
+
+        # Apply k-means clustering
+        kmeans = KMeans(n_clusters=int(self.num_clusters.get()))
+        kmeans.fit(pixels)
+
+        # Get the cluster labels and reshape them to the original image shape
+        labels = kmeans.labels_
+        segmented_image = labels.reshape(image.size[1], image.size[0])  # (height, width)
+
+        # Convert the cluster labels to color values for visualization
+        colors = kmeans.cluster_centers_.astype(np.uint8)
+        segmented_image = colors[segmented_image]
+
+        # Convert segmented image to PhotoImage
+        segmented_image = Image.fromarray(segmented_image)
+        segmented_image_resized = segmented_image.resize((self.width, self.height))  # Adjust the size as needed
+        segmented_image_tk = ImageTk.PhotoImage(segmented_image_resized)
+
+        # Display the segmented image
+        self.image_label.config(image=segmented_image_tk)
+        self.image_label.image = segmented_image_tk
+        
+        
 
 if __name__ == '__main__':
     root = tkinter.Tk()
